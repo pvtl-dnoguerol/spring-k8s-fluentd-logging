@@ -7,5 +7,5 @@ log sink.
 
 In this example, Fluentd is configured to only pass DEBUG
 and TRACE log entries from the Spring Boot app to its 
-(FluentD's) STDOUT. In a real-world scenario, the should
-store the logs somewhere more useful :-)
+(FluentD's) STDOUT. In a real-world scenario, the config 
+should store the logs somewhere more useful :-)
