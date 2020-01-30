@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  td-agent.conf: |
+    <source>
+      @type tail
+      <parse>
+        @type none
+      </parse>
+      path /log/spring.log
+      tag spring.logs
+    </source>
+    <filter spring.logs>
+      @type grep
+      <regexp>
+        key message
+        pattern /(TRACE|DEBUG)/
+      </regexp>
+    </filter>
+    <match **>
+      @type copy
+      <store>
+        @type stdout
+      </store>
+    </match>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logemitter
+  labels:
+    app: logemitter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logemitter
+  template:
+    metadata:
+      labels:
+        app: logemitter
+    spec:
+      containers:
+        - name: logemitter
+          image: eu.gcr.io/pa-dnoguerol/logemitter:1.0.0
+          env:
+            - name: _JAVA_OPTIONS
+              value: -Dlogging.path=/log
+          volumeMounts:
+            - name: logs
+              mountPath: /log
+        - name: fluentd
+          image: fluent/fluentd:v1.9-1
+          args: ["-c","/etc/td-agent/td-agent.conf"]
+          volumeMounts:
+            - name: logs
+              mountPath: /log
+            - name: config
+              mountPath: /etc/td-agent
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: fluentd-config
